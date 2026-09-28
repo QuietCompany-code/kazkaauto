@@ -221,10 +221,40 @@
   }
   .user-bar button:hover { text-decoration: underline; }
 
+  .profile-btn {
+    position: fixed; top: calc(12px + env(safe-area-inset-top, 0px)); left: 12px;
+    width: 46px; height: 46px; border-radius: 50%; padding: 4px;
+    background: var(--card); border: 1px solid var(--line); cursor: pointer; z-index: 20;
+  }
+  .profile-btn img { width: 100%; height: 100%; display: block; }
+  .profile-btn:hover { border-color: var(--green); }
+  .profile-menu {
+    position: fixed; top: calc(66px + env(safe-area-inset-top, 0px)); left: 12px;
+    min-width: 220px; max-width: calc(100% - 24px); z-index: 20;
+    background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 14px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+  }
+  .profile-menu .pm-name { font-weight: 600; font-size: 14px; word-break: break-word; }
+  .profile-menu .pm-email { font-size: 12px; opacity: 0.6; margin: 2px 0 12px; word-break: break-all; }
+  .profile-menu button {
+    display: block; width: 100%; text-align: left; background: none; border: none;
+    border-top: 1px solid var(--line); padding: 10px 0 2px; margin-top: 8px;
+    font-family: 'Work Sans', sans-serif; font-size: 13px; color: var(--ink); cursor: pointer;
+  }
+  .profile-menu button.danger { color: var(--brick); }
+
   .hidden { display: none !important; }
 </style>
 </head>
 <body>
+<button class="profile-btn hidden" id="profile-btn" type="button" aria-label="Профіль"><img alt="" src="data:image/png;base64,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"></button>
+<div class="profile-menu hidden" id="profile-menu">
+  <div class="pm-name" id="pm-name"></div>
+  <div class="pm-email" id="pm-email"></div>
+  <button type="button" id="pm-templates">Мої постійні гості</button>
+  <button type="button" class="danger" id="pm-signout">Вийти</button>
+</div>
+
 <div class="stage">
 
   <section id="view-home">
@@ -241,23 +271,35 @@
       </button>
     </div>
     <button class="manage-link" id="btn-manage-home" type="button" style="margin-top:18px;">Мої постійні гості →</button>
+    <br><button class="manage-link" id="btn-register-home" type="button" style="margin-top:8px;">Створити акаунт →</button>
   </section>
 
   <section id="view-auth" class="hidden">
     <button class="back" id="btn-back-auth" type="button">← Назад</button>
     <div class="card">
       <span class="badge" style="background: var(--green);">Мешканець</span>
-      <h1 style="font-size:22px; margin-bottom:18px;">Вхід для мешканців</h1>
+      <h1 id="auth-title" style="font-size:22px; margin-bottom:18px;">Вхід для мешканців</h1>
       <div class="auth-tabs">
         <button class="auth-tab active" id="tab-signin" type="button">Увійти</button>
         <button class="auth-tab" id="tab-signup" type="button">Зареєструватись</button>
       </div>
+      <p class="sub" id="auth-hint" style="font-size:14px; margin:-6px 0 16px;">Щоб зареєструвати авто, потрібен акаунт: увійдіть або створіть його.</p>
       <p class="auth-msg" id="auth-msg"></p>
       <form id="auth-form">
+        <div id="signup-extra" class="hidden">
+          <label for="auth-name">Ім'я та прізвище</label>
+          <input id="auth-name" type="text" autocomplete="name" placeholder="напр. Олег Коваль">
+          <label for="auth-apt">Номер квартири</label>
+          <input id="auth-apt" type="text" autocomplete="off" placeholder="напр. кв. 17">
+        </div>
         <label for="auth-email">Email</label>
         <input id="auth-email" type="email" autocomplete="email" required>
         <label for="auth-password">Пароль</label>
         <input id="auth-password" type="password" autocomplete="current-password" minlength="6" required>
+        <div id="signup-confirm" class="hidden">
+          <label for="auth-password2">Повторіть пароль</label>
+          <input id="auth-password2" type="password" autocomplete="new-password" minlength="6">
+        </div>
         <button class="submit" type="submit" style="background: var(--green);" id="auth-submit">Увійти</button>
       </form>
     </div>
@@ -403,10 +445,15 @@
     });
   }
 
-  // Живий журнал в'їздів гостей — оновлюється миттєво в усіх, хто відкрив сторінку
-  db.collection('entries').where('role', '==', 'guest').orderBy('time', 'desc').limit(10)
-    .onSnapshot((snap) => renderGuestLogFromDocs(snap.docs),
-                (err) => console.error('Помилка читання журналу:', err));
+  // Живий журнал в'їздів гостей — лише для тих, хто увійшов в акаунт
+  let unsubEntries = null;
+  function watchEntries() {
+    if (unsubEntries) { unsubEntries(); unsubEntries = null; }
+    if (!auth.currentUser) { renderGuestLogFromDocs([]); return; }
+    unsubEntries = db.collection('entries').where('role', '==', 'guest').orderBy('time', 'desc').limit(10)
+      .onSnapshot((snap) => renderGuestLogFromDocs(snap.docs),
+                  (err) => console.error('Помилка читання журналу:', err));
+  }
 
   function submitEntry(role, plate, note) {
     return db.collection('entries').add({
@@ -417,6 +464,7 @@
   }
 
   let currentRole = null;
+  let pendingRole = null;
 
   // Український формат номера: 2 літери, 4 цифри, 2 літери.
   // Дозволені літери — ті, що однаково виглядають в кирилиці й латиниці.
@@ -532,7 +580,7 @@
   }
 
   function showForm(role) {
-    if (role === 'resident' && !auth.currentUser) { showAuth(); return; }
+    if (!auth.currentUser) { pendingRole = role; showAuth(); return; }
     currentRole = role;
     formCard.className = 'card role-' + role;
     if (role === 'guest') {
@@ -554,7 +602,7 @@
     hideAll();
     formView.classList.remove('hidden');
     document.getElementById('plate').value = '';
-    document.getElementById('note').value = '';
+    document.getElementById('note').value = (role === 'resident' && auth.currentUser && auth.currentUser.displayName) || '';
     document.getElementById('plate').classList.remove('invalid');
     document.getElementById('plate-error').style.display = 'none';
     document.getElementById('plate').focus();
@@ -636,8 +684,16 @@
     tabSignin.classList.toggle('active', mode === 'signin');
     tabSignup.classList.toggle('active', mode === 'signup');
     authSubmit.textContent = mode === 'signin' ? 'Увійти' : 'Зареєструватись';
+    document.getElementById('auth-title').textContent = mode === 'signin' ? 'Вхід для мешканців' : 'Реєстрація мешканця';
+    const signup = mode === 'signup';
+    document.getElementById('signup-extra').classList.toggle('hidden', !signup);
+    document.getElementById('signup-confirm').classList.toggle('hidden', !signup);
+    ['auth-name', 'auth-apt', 'auth-password2'].forEach((id) => { document.getElementById(id).required = signup; });
+    document.getElementById('auth-password').autocomplete = signup ? 'new-password' : 'current-password';
     authMsg.style.display = 'none';
   }
+  function showAuthMode(mode) { setAuthMode(mode); showAuth(); }
+  document.getElementById('btn-register-home').addEventListener('click', () => showAuthMode('signup'));
   tabSignin.addEventListener('click', () => setAuthMode('signin'));
   tabSignup.addEventListener('click', () => setAuthMode('signup'));
 
@@ -646,13 +702,29 @@
     const email = document.getElementById('auth-email').value.trim();
     const password = document.getElementById('auth-password').value;
     authMsg.style.display = 'none';
-    const action = authMode === 'signin'
-      ? auth.signInWithEmailAndPassword(email, password)
-      : auth.createUserWithEmailAndPassword(email, password);
-    action.then(() => showForm('resident')).catch((err) => {
-      authMsg.textContent = 'Помилка: перевірте email/пароль (мінімум 6 символів).';
+    function fail(text, err) {
+      authMsg.textContent = text;
       authMsg.style.display = 'block';
-      console.error(err);
+      if (err) console.error(err);
+    }
+    let action;
+    if (authMode === 'signin') {
+      action = auth.signInWithEmailAndPassword(email, password);
+    } else {
+      const name = document.getElementById('auth-name').value.trim();
+      const apt = document.getElementById('auth-apt').value.trim();
+      if (password !== document.getElementById('auth-password2').value) { fail('Паролі не збігаються.'); return; }
+      if (!name || !apt) { fail("Вкажіть ім'я та номер квартири."); return; }
+      action = auth.createUserWithEmailAndPassword(email, password)
+        .then((cred) => cred.user.updateProfile({ displayName: name + ', ' + apt }));
+    }
+    action.then(() => { const r = pendingRole || 'resident'; pendingRole = null; showForm(r); }).catch((err) => {
+      const code = err && err.code;
+      if (code === 'auth/email-already-in-use') fail('Цей email уже зареєстровано. Спробуйте увійти.', err);
+      else if (code === 'auth/weak-password') fail('Пароль надто простий (мінімум 6 символів).', err);
+      else if (code === 'auth/invalid-email') fail('Некоректний email.', err);
+      else if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') fail('Невірний email або пароль.', err);
+      else fail('Не вдалося виконати. Спробуйте ще раз.', err);
     });
   });
 
@@ -666,8 +738,24 @@
       if (user) { bar.classList.remove('hidden'); label.textContent = user.email; }
       else { bar.classList.add('hidden'); }
     });
+    // Іконка профілю зліва вгорі — лише коли є акаунт
+    document.getElementById('profile-btn').classList.toggle('hidden', !user);
+    if (!user) document.getElementById('profile-menu').classList.add('hidden');
+    if (user) {
+      document.getElementById('pm-name').textContent = user.displayName || 'Мешканець';
+      document.getElementById('pm-email').textContent = user.email;
+    }
+    watchEntries();
     watchTemplates();
   });
+
+  document.getElementById('profile-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.getElementById('profile-menu').classList.toggle('hidden');
+  });
+  document.addEventListener('click', () => document.getElementById('profile-menu').classList.add('hidden'));
+  document.getElementById('pm-templates').addEventListener('click', showTemplates);
+  document.getElementById('pm-signout').addEventListener('click', () => auth.signOut().then(showHome));
 </script>
 </body>
 </html>
