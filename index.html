@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Реєстрація на в'їзд</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- Firebase (v8 compat API) -->
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<style>
+  :root {
+    --bg: #F5F2EA;
+    --ink: #2B2A26;
+    --green: #3F5D3A;
+    --green-dark: #2E4529;
+    --brick: #AE4A2C;
+    --card: #ECE7D9;
+    --line: #D8D1BE;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #201F1B; --ink: #EDE8DB; --card: #2B2A24; --line: #46443A;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #201F1B; --ink: #EDE8DB; --card: #2B2A24; --line: #46443A;
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); box-sizing: border-box; }
+  *, *::before, *::after { box-sizing: inherit; }
+  body {
+    margin: 0;
+    min-height: 100%;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Work Sans', system-ui, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+  }
+  .stage { width: 100%; max-width: 460px; }
+  h1 {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 600;
+    font-size: clamp(28px, 6vw, 36px);
+    line-height: 1.15;
+    margin: 0 0 6px;
+  }
+  .sub { color: var(--ink); opacity: 0.65; font-size: 15px; margin: 0 0 32px; max-width: 40ch; }
+
+  .gate {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .gate button {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 19px;
+    font-weight: 600;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 36px 14px;
+    cursor: pointer;
+    transition: transform 0.15s ease, filter 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    text-align: left;
+  }
+  .gate button span.mark { font-family: 'Work Sans', sans-serif; font-size: 12px; font-weight: 500; opacity: 0.8; }
+  .gate button:hover { transform: translateY(-2px); filter: brightness(1.06); }
+  .gate button:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+  #btn-guest { background: var(--brick); }
+  #btn-resident { background: var(--green); }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 28px;
+  }
+  .back {
+    background: none; border: none; color: var(--ink); opacity: 0.6;
+    font-family: 'Work Sans', sans-serif; font-size: 14px; cursor: pointer;
+    padding: 0 0 18px; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .back:hover { opacity: 1; }
+  label {
+    display: block; font-size: 13px; font-weight: 500; margin: 0 0 6px;
+    opacity: 0.75;
+  }
+  input, textarea {
+    width: 100%;
+    font-family: 'Work Sans', sans-serif;
+    font-size: 16px;
+    padding: 11px 12px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--bg);
+    color: var(--ink);
+    margin-bottom: 18px;
+  }
+  input:focus, textarea:focus, button:focus-visible {
+    outline: 2px solid var(--green);
+    outline-offset: 1px;
+  }
+  textarea { resize: vertical; min-height: 70px; font-family: inherit; }
+  .submit {
+    width: 100%;
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 600;
+    font-size: 16px;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 13px;
+    cursor: pointer;
+  }
+  .submit:hover { filter: brightness(1.06); }
+  .role-guest .submit, .role-guest .badge { background: var(--brick); }
+  .role-resident .submit, .role-resident .badge { background: var(--green); }
+  .badge {
+    display: inline-block; color: #fff; font-size: 12px; font-weight: 500;
+    padding: 4px 10px; border-radius: 20px; margin-bottom: 14px;
+  }
+
+  .done { text-align: center; padding: 20px 4px; }
+  .done .check {
+    width: 48px; height: 48px; border-radius: 50%; background: var(--green);
+    color: #fff; display: flex; align-items: center; justify-content: center;
+    font-size: 22px; margin: 0 auto 16px;
+  }
+  .done h2 { font-family: 'Fraunces', serif; font-size: 22px; margin: 0 0 8px; }
+  .done p { opacity: 0.7; font-size: 14px; margin: 0 0 22px; }
+  .done .plate {
+    font-family: 'Work Sans', sans-serif; font-weight: 600; letter-spacing: 1px;
+    background: var(--bg); border: 1px solid var(--line); border-radius: 4px;
+    padding: 8px 14px; display: inline-block; margin-bottom: 22px;
+  }
+  .again { background: none; border: 1px solid var(--line); color: var(--ink);
+    border-radius: 4px; padding: 10px 18px; font-family: 'Work Sans', sans-serif;
+    font-size: 14px; cursor: pointer; }
+  .again:hover { border-color: var(--ink); }
+
+  .manage-link {
+    display: inline-block; background: none; border: none; color: var(--green);
+    font-family: 'Work Sans', sans-serif; font-size: 13px; font-weight: 500;
+    cursor: pointer; padding: 0; margin-top: 4px;
+  }
+  .manage-link:hover { text-decoration: underline; }
+
+  .chips-row { margin-bottom: 18px; }
+  .chips-label { font-size: 13px; font-weight: 500; opacity: 0.75; margin: 0 0 8px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    background: var(--bg); border: 1px solid var(--line); color: var(--ink);
+    border-radius: 20px; padding: 7px 14px; font-family: 'Work Sans', sans-serif;
+    font-size: 13px; cursor: pointer; text-align: left;
+  }
+  .chip:hover { border-color: var(--green); }
+  .chip .chip-plate { opacity: 0.6; font-size: 12px; }
+  .divider { border: none; border-top: 1px solid var(--line); margin: 4px 0 18px; }
+
+  .tpl-list { list-style: none; margin: 0 0 22px; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+  .tpl-item {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    background: var(--bg); border: 1px solid var(--line); border-radius: 4px;
+    padding: 10px 12px;
+  }
+  .tpl-info { font-size: 14px; }
+  .tpl-info .tpl-name { font-weight: 500; }
+  .tpl-info .tpl-meta { opacity: 0.6; font-size: 12px; margin-top: 2px; }
+  .tpl-del {
+    background: none; border: none; color: var(--brick); font-size: 13px;
+    cursor: pointer; padding: 4px 6px; white-space: nowrap;
+  }
+  .tpl-del:hover { text-decoration: underline; }
+  .tpl-empty { font-size: 14px; opacity: 0.6; margin: 0 0 22px; }
+
+  .field-hint { font-size: 12px; opacity: 0.55; margin: -12px 0 14px; }
+  .field-error { font-size: 12px; color: var(--brick); margin: -12px 0 14px; display: none; }
+  input.invalid { border-color: var(--brick); }
+  input.plate-input { text-transform: uppercase; letter-spacing: 1px; }
+
+  .log-block { margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--line); }
+  .log-title { font-size: 13px; font-weight: 500; opacity: 0.75; margin: 0 0 12px; }
+  .log-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .log-item {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+    background: var(--bg); border: 1px solid var(--line); border-radius: 4px;
+    padding: 9px 12px; font-size: 13px;
+  }
+  .log-item .log-plate { font-weight: 600; letter-spacing: 0.5px; }
+  .log-item .log-note { opacity: 0.65; flex: 1; margin: 0 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .log-item .log-time { opacity: 0.5; font-size: 11px; white-space: nowrap; }
+  .log-empty { font-size: 13px; opacity: 0.5; }
+
+  .auth-tabs { display: flex; gap: 6px; margin-bottom: 20px; }
+  .auth-tab {
+    flex: 1; background: var(--bg); border: 1px solid var(--line); color: var(--ink);
+    border-radius: 4px; padding: 9px; font-family: 'Work Sans', sans-serif; font-size: 13px;
+    font-weight: 500; cursor: pointer; opacity: 0.6;
+  }
+  .auth-tab.active { border-color: var(--green); color: var(--green); opacity: 1; }
+  .auth-msg { font-size: 13px; color: var(--brick); margin: -8px 0 16px; display: none; }
+  .user-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 12px; opacity: 0.7; margin-bottom: 14px;
+  }
+  .user-bar button {
+    background: none; border: none; color: var(--brick); font-size: 12px;
+    cursor: pointer; padding: 0;
+  }
+  .user-bar button:hover { text-decoration: underline; }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="stage">
+
+  <section id="view-home">
+    <h1>Реєстрація на в'їзд</h1>
+    <p class="sub">Оберіть, хто ви, і залиште номер авто — це допоможе охороні швидше вас пропустити.</p>
+    <div class="gate">
+      <button id="btn-guest" type="button">
+        <span class="mark">Тимчасовий в'їзд</span>
+        Гість
+      </button>
+      <button id="btn-resident" type="button">
+        <span class="mark">Постійний мешканець</span>
+        Мешканець
+      </button>
+    </div>
+    <button class="manage-link" id="btn-manage-home" type="button" style="margin-top:18px;">Мої постійні гості →</button>
+  </section>
+
+  <section id="view-auth" class="hidden">
+    <button class="back" id="btn-back-auth" type="button">← Назад</button>
+    <div class="card">
+      <span class="badge" style="background: var(--green);">Мешканець</span>
+      <h1 style="font-size:22px; margin-bottom:18px;">Вхід для мешканців</h1>
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-signin" type="button">Увійти</button>
+        <button class="auth-tab" id="tab-signup" type="button">Зареєструватись</button>
+      </div>
+      <p class="auth-msg" id="auth-msg"></p>
+      <form id="auth-form">
+        <label for="auth-email">Email</label>
+        <input id="auth-email" type="email" autocomplete="email" required>
+        <label for="auth-password">Пароль</label>
+        <input id="auth-password" type="password" autocomplete="current-password" minlength="6" required>
+        <button class="submit" type="submit" style="background: var(--green);" id="auth-submit">Увійти</button>
+      </form>
+    </div>
+  </section>
+
+  <section id="view-form" class="hidden">
+    <button class="back" id="btn-back" type="button">← Назад</button>
+    <div class="card" id="form-card">
+      <div class="user-bar hidden" id="user-bar-form">
+        <span id="user-email-form"></span>
+        <button type="button" id="btn-signout-form">Вийти</button>
+      </div>
+      <span class="badge" id="form-badge"></span>
+      <h1 id="form-title" style="font-size:22px; margin-bottom:20px;"></h1>
+
+      <div id="chips-block" class="chips-row hidden">
+        <p class="chips-label">Швидкий вибір — постійний гість</p>
+        <div class="chips" id="chips-list"></div>
+        <hr class="divider">
+      </div>
+
+      <form id="entry-form">
+        <label for="plate">Номер автомобіля</label>
+        <input id="plate" class="plate-input" type="text" placeholder="АА1234АА" autocomplete="off" maxlength="8" required>
+        <p class="field-hint" id="plate-hint">Формат: 2 літери — 4 цифри — 2 літери (наприклад, АА1234АА)</p>
+        <p class="field-error" id="plate-error">Перевірте номер: 2 літери, 4 цифри, 2 літери</p>
+
+        <label for="note" id="note-label">Примітка</label>
+        <textarea id="note" placeholder="Хто ви? До кого прямуєте / номер квартири" required></textarea>
+
+        <button class="submit" type="submit">Зареєструвати в'їзд</button>
+      </form>
+
+      <button class="manage-link hidden" id="btn-manage" type="button">Керувати постійними гостями →</button>
+
+      <div id="guest-log" class="log-block hidden">
+        <p class="log-title">Останні зареєстровані гості</p>
+        <ul class="log-list hidden" id="log-list"></ul>
+        <p class="log-empty" id="log-empty">Поки що ніхто не реєструвався.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-templates" class="hidden">
+    <button class="back" id="btn-back-templates" type="button">← Назад</button>
+    <div class="card">
+      <div class="user-bar hidden" id="user-bar-tpl">
+        <span id="user-email-tpl"></span>
+        <button type="button" id="btn-signout-tpl">Вийти</button>
+      </div>
+      <span class="badge" style="background: var(--green);">Мешканець</span>
+      <h1 style="font-size:22px; margin-bottom:6px;">Постійні гості</h1>
+      <p class="sub" style="margin-bottom:20px; font-size:14px;">Збережіть тих, хто приїжджає регулярно — на гостьовій сторінці їх можна буде обрати в один дотик.</p>
+
+      <ul class="tpl-list hidden" id="tpl-list"></ul>
+      <p class="tpl-empty" id="tpl-empty">Поки що немає збережених гостей.</p>
+
+      <form id="template-form">
+        <label for="tpl-name">Ім'я гостя</label>
+        <input id="tpl-name" type="text" placeholder="напр. Ірина" autocomplete="off" required>
+
+        <label for="tpl-plate">Номер автомобіля</label>
+        <input id="tpl-plate" class="plate-input" type="text" placeholder="АА1234АА" autocomplete="off" maxlength="8" required>
+        <p class="field-hint" id="tpl-plate-hint">Формат: 2 літери — 4 цифри — 2 літери</p>
+        <p class="field-error" id="tpl-plate-error">Перевірте номер: 2 літери, 4 цифри, 2 літери</p>
+
+        <label for="tpl-apt">До кого / номер квартири</label>
+        <input id="tpl-apt" type="text" placeholder="напр. кв. 42" autocomplete="off" required>
+
+        <button class="submit" type="submit" style="background: var(--green);">Додати гостя</button>
+      </form>
+    </div>
+  </section>
+
+  <section id="view-done" class="hidden">
+    <div class="card done">
+      <div class="check">✓</div>
+      <h2>В'їзд зареєстровано</h2>
+      <p id="done-sub"></p>
+      <div class="plate" id="done-plate"></div>
+      <div><button class="again" id="btn-again" type="button">Зареєструвати ще один</button></div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  // === ЗАПОВНИ СВОЇМИ ДАНИМИ З Firebase Console → Project settings → Your apps ===
+  const firebaseConfig = {
+    apiKey: "AIzaSyDzusXPahHryCEK6e9iNTRQqaGBVvfr12Q",
+    authDomain: "kazkaauto.firebaseapp.com",
+    projectId: "kazkaauto",
+    storageBucket: "kazkaauto.firebasestorage.app",
+    messagingSenderId: "706285050255",
+    appId: "1:706285050255:web:f8f961e509130d652dd3fa"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  const homeView = document.getElementById('view-home');
+  const authView = document.getElementById('view-auth');
+  const formView = document.getElementById('view-form');
+  const doneView = document.getElementById('view-done');
+  const templatesView = document.getElementById('view-templates');
+  const formCard = document.getElementById('form-card');
+  const formTitle = document.getElementById('form-title');
+  const formBadge = document.getElementById('form-badge');
+  const noteLabel = document.getElementById('note-label');
+  const entryForm = document.getElementById('entry-form');
+  const doneSub = document.getElementById('done-sub');
+  const donePlate = document.getElementById('done-plate');
+  const chipsBlock = document.getElementById('chips-block');
+  const chipsList = document.getElementById('chips-list');
+  const btnManage = document.getElementById('btn-manage');
+  const guestLog = document.getElementById('guest-log');
+
+  function formatTime(ts) {
+    if (!ts || !ts.toDate) return '';
+    return ts.toDate().toLocaleString('uk-UA', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  }
+
+  function renderGuestLogFromDocs(docs) {
+    const listEl = document.getElementById('log-list');
+    const emptyEl = document.getElementById('log-empty');
+    if (docs.length === 0) {
+      listEl.classList.add('hidden');
+      emptyEl.classList.remove('hidden');
+      return;
+    }
+    emptyEl.classList.add('hidden');
+    listEl.classList.remove('hidden');
+    listEl.innerHTML = '';
+    docs.forEach((doc) => {
+      const e = doc.data();
+      const li = document.createElement('li');
+      li.className = 'log-item';
+      li.innerHTML = '<span class="log-plate"></span><span class="log-note"></span><span class="log-time"></span>';
+      li.querySelector('.log-plate').textContent = e.plate;
+      li.querySelector('.log-note').textContent = e.note;
+      li.querySelector('.log-time').textContent = formatTime(e.time);
+      listEl.appendChild(li);
+    });
+  }
+
+  // Живий журнал в'їздів гостей — оновлюється миттєво в усіх, хто відкрив сторінку
+  db.collection('entries').where('role', '==', 'guest').orderBy('time', 'desc').limit(10)
+    .onSnapshot((snap) => renderGuestLogFromDocs(snap.docs),
+                (err) => console.error('Помилка читання журналу:', err));
+
+  function submitEntry(role, plate, note) {
+    return db.collection('entries').add({
+      role, plate, note,
+      uid: auth.currentUser ? auth.currentUser.uid : null,
+      time: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }
+
+  let currentRole = null;
+
+  // Український формат номера: 2 літери, 4 цифри, 2 літери.
+  // Дозволені літери — ті, що однаково виглядають в кирилиці й латиниці.
+  const PLATE_LETTERS = 'АВЕІКМНОРСТХABEIKMHOPCTX';
+  const PLATE_RE = new RegExp('^[' + PLATE_LETTERS + ']{2}\\d{4}[' + PLATE_LETTERS + ']{2}$', 'i');
+
+  function attachPlateField(inputEl, errorEl) {
+    inputEl.addEventListener('input', () => {
+      let v = inputEl.value.toUpperCase();
+      const re = new RegExp('[^' + PLATE_LETTERS + '0-9]', 'g');
+      v = v.replace(re, '');
+      inputEl.value = v;
+      inputEl.classList.remove('invalid');
+      errorEl.style.display = 'none';
+    });
+    inputEl.addEventListener('blur', () => {
+      if (inputEl.value && !PLATE_RE.test(inputEl.value)) {
+        inputEl.classList.add('invalid');
+        errorEl.style.display = 'block';
+      }
+    });
+  }
+
+  function validatePlate(inputEl, errorEl) {
+    const ok = PLATE_RE.test(inputEl.value);
+    inputEl.classList.toggle('invalid', !ok);
+    errorEl.style.display = ok ? 'none' : 'block';
+    return ok;
+  }
+
+  attachPlateField(document.getElementById('plate'), document.getElementById('plate-error'));
+  attachPlateField(document.getElementById('tpl-plate'), document.getElementById('tpl-plate-error'));
+
+  // Шаблони зберігаються в users/{uid}/templates — читати/писати може лише власник
+  function templatesRef() {
+    if (!auth.currentUser) return null;
+    return db.collection('users').doc(auth.currentUser.uid).collection('templates');
+  }
+
+  let unsubTemplates = null;
+  let currentTemplates = [];
+
+  function watchTemplates() {
+    if (unsubTemplates) { unsubTemplates(); unsubTemplates = null; }
+    const ref = templatesRef();
+    if (!ref) { currentTemplates = []; renderChips(); return; }
+    unsubTemplates = ref.orderBy('name').onSnapshot((snap) => {
+      currentTemplates = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      renderChips();
+      renderTemplateList();
+    }, (err) => console.error('Помилка читання шаблонів:', err));
+  }
+
+  function renderChips() {
+    if (currentTemplates.length === 0) { chipsBlock.classList.add('hidden'); return; }
+    chipsBlock.classList.remove('hidden');
+    chipsList.innerHTML = '';
+    currentTemplates.forEach((t) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'chip';
+      btn.innerHTML = t.name + ' <span class="chip-plate">· ' + t.plate + '</span>';
+      btn.addEventListener('click', () => {
+        document.getElementById('plate').value = t.plate;
+        document.getElementById('note').value = t.name + ', ' + t.apartment;
+      });
+      chipsList.appendChild(btn);
+    });
+  }
+
+  function renderTemplateList() {
+    const listEl = document.getElementById('tpl-list');
+    const emptyEl = document.getElementById('tpl-empty');
+    if (currentTemplates.length === 0) {
+      listEl.classList.add('hidden');
+      emptyEl.classList.remove('hidden');
+      return;
+    }
+    emptyEl.classList.add('hidden');
+    listEl.classList.remove('hidden');
+    listEl.innerHTML = '';
+    currentTemplates.forEach((t) => {
+      const li = document.createElement('li');
+      li.className = 'tpl-item';
+      li.innerHTML = '<div class="tpl-info"><div class="tpl-name"></div><div class="tpl-meta"></div></div>';
+      li.querySelector('.tpl-name').textContent = t.name;
+      li.querySelector('.tpl-meta').textContent = t.plate + ' · ' + t.apartment;
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'tpl-del';
+      del.textContent = 'Видалити';
+      del.addEventListener('click', () => {
+        const ref = templatesRef();
+        if (ref) ref.doc(t.id).delete().catch((err) => console.error(err));
+      });
+      li.appendChild(del);
+      listEl.appendChild(li);
+    });
+  }
+
+  function hideAll() {
+    homeView.classList.add('hidden');
+    authView.classList.add('hidden');
+    formView.classList.add('hidden');
+    doneView.classList.add('hidden');
+    templatesView.classList.add('hidden');
+  }
+
+  function showAuth() {
+    hideAll();
+    document.getElementById('auth-msg').style.display = 'none';
+    authView.classList.remove('hidden');
+  }
+
+  function showForm(role) {
+    if (role === 'resident' && !auth.currentUser) { showAuth(); return; }
+    currentRole = role;
+    formCard.className = 'card role-' + role;
+    if (role === 'guest') {
+      formBadge.textContent = 'Гість';
+      formTitle.textContent = 'Дані гостя';
+      noteLabel.textContent = 'До кого ви прямуєте (ПІБ, № квартири)';
+      document.getElementById('note').placeholder = 'напр. Ірина, кв. 42';
+      btnManage.classList.add('hidden');
+      guestLog.classList.remove('hidden');
+    } else {
+      formBadge.textContent = 'Мешканець';
+      formTitle.textContent = 'Дані мешканця';
+      noteLabel.textContent = "Ваше ім'я та номер квартири";
+      document.getElementById('note').placeholder = 'напр. Олег, кв. 17';
+      chipsBlock.classList.add('hidden');
+      btnManage.classList.remove('hidden');
+      guestLog.classList.add('hidden');
+    }
+    hideAll();
+    formView.classList.remove('hidden');
+    document.getElementById('plate').value = '';
+    document.getElementById('note').value = '';
+    document.getElementById('plate').classList.remove('invalid');
+    document.getElementById('plate-error').style.display = 'none';
+    document.getElementById('plate').focus();
+  }
+
+  function showHome() {
+    hideAll();
+    homeView.classList.remove('hidden');
+  }
+
+  function showTemplates() {
+    if (!auth.currentUser) { showAuth(); return; }
+    hideAll();
+    renderTemplateList();
+    templatesView.classList.remove('hidden');
+  }
+
+  document.getElementById('btn-back-auth').addEventListener('click', showHome);
+  [document.getElementById('btn-signout-form'), document.getElementById('btn-signout-tpl')]
+    .forEach((btn) => btn.addEventListener('click', () => auth.signOut().then(showHome)));
+
+  document.getElementById('btn-guest').addEventListener('click', () => showForm('guest'));
+  document.getElementById('btn-resident').addEventListener('click', () => showForm('resident'));
+  document.getElementById('btn-back').addEventListener('click', showHome);
+  document.getElementById('btn-again').addEventListener('click', () => showForm(currentRole));
+  btnManage.addEventListener('click', showTemplates);
+  document.getElementById('btn-manage-home').addEventListener('click', showTemplates);
+  document.getElementById('btn-back-templates').addEventListener('click', showHome);
+
+  document.getElementById('template-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const tplPlateInput = document.getElementById('tpl-plate');
+    const tplPlateError = document.getElementById('tpl-plate-error');
+    if (!validatePlate(tplPlateInput, tplPlateError)) { tplPlateInput.focus(); return; }
+    const ref = templatesRef();
+    if (!ref) return;
+
+    const name = document.getElementById('tpl-name').value.trim();
+    const plate = tplPlateInput.value.trim();
+    const apartment = document.getElementById('tpl-apt').value.trim();
+    if (!name || !plate || !apartment) return;
+    ref.add({ name, plate, apartment }).then(() => {
+      document.getElementById('template-form').reset();
+    }).catch((err) => console.error('Помилка збереження шаблону:', err));
+  });
+
+  entryForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const plateInput = document.getElementById('plate');
+    const plateError = document.getElementById('plate-error');
+    if (!validatePlate(plateInput, plateError)) { plateInput.focus(); return; }
+
+    const plate = plateInput.value.trim();
+    const note = document.getElementById('note').value.trim();
+    if (!plate || !note) return;
+
+    submitEntry(currentRole, plate, note).then(() => {
+      donePlate.textContent = plate;
+      doneSub.textContent = currentRole === 'guest'
+        ? 'Охорона побачить цей запис і пропустить вас.'
+        : 'Запис збережено для цього під\'їзду.';
+      formView.classList.add('hidden');
+      doneView.classList.remove('hidden');
+    }).catch((err) => {
+      console.error('Помилка запису в базу:', err);
+      alert('Не вдалося зберегти запис. Спробуйте ще раз.');
+    });
+  });
+
+  // --- Вхід / реєстрація мешканця ---
+  let authMode = 'signin';
+  const tabSignin = document.getElementById('tab-signin');
+  const tabSignup = document.getElementById('tab-signup');
+  const authSubmit = document.getElementById('auth-submit');
+  const authMsg = document.getElementById('auth-msg');
+
+  function setAuthMode(mode) {
+    authMode = mode;
+    tabSignin.classList.toggle('active', mode === 'signin');
+    tabSignup.classList.toggle('active', mode === 'signup');
+    authSubmit.textContent = mode === 'signin' ? 'Увійти' : 'Зареєструватись';
+    authMsg.style.display = 'none';
+  }
+  tabSignin.addEventListener('click', () => setAuthMode('signin'));
+  tabSignup.addEventListener('click', () => setAuthMode('signup'));
+
+  document.getElementById('auth-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value;
+    authMsg.style.display = 'none';
+    const action = authMode === 'signin'
+      ? auth.signInWithEmailAndPassword(email, password)
+      : auth.createUserWithEmailAndPassword(email, password);
+    action.then(() => showForm('resident')).catch((err) => {
+      authMsg.textContent = 'Помилка: перевірте email/пароль (мінімум 6 символів).';
+      authMsg.style.display = 'block';
+      console.error(err);
+    });
+  });
+
+  // Тримає інтерфейс синхронним зі станом входу на будь-якій сторінці
+  auth.onAuthStateChanged((user) => {
+    const bars = [
+      [document.getElementById('user-bar-form'), document.getElementById('user-email-form')],
+      [document.getElementById('user-bar-tpl'), document.getElementById('user-email-tpl')]
+    ];
+    bars.forEach(([bar, label]) => {
+      if (user) { bar.classList.remove('hidden'); label.textContent = user.email; }
+      else { bar.classList.add('hidden'); }
+    });
+    watchTemplates();
+  });
+</script>
+</body>
+</html>
